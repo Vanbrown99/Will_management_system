@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — DecentralWill</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .dashboard      { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .dash-header    { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .dash-header h1 { font-size: 1.65rem; font-weight: 700; }
+    .dash-header p  { color: var(--muted); font-size: .875rem; margin-top: .2rem; }
+
+    /* Stats */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-mini {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.1rem 1.25rem;
+      display: flex; align-items: center; gap: .85rem;
+    }
+    .stat-mini-icon { font-size: 1.6rem; }
+    .stat-mini-val  { font-size: 1.3rem; font-weight: 700; line-height: 1; }
+    .stat-mini-lbl  { font-size: .75rem; color: var(--muted); margin-top: .2rem; }
+
+    /* Ping bar */
+    .ping-bar {
+      border-radius: 14px; padding: 1.1rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;
+      background: rgba(108,99,255,.08); border: 1px solid rgba(108,99,255,.3);
+      transition: all .3s;
+    }
+    .ping-bar.urgent { background: rgba(255,107,107,.08); border-color: rgba(255,107,107,.4); }
+    .ping-bar-left   { display: flex; align-items: center; gap: .85rem; }
+    .ping-icon       { font-size: 2rem; }
+    .ping-title      { font-weight: 700; font-size: .95rem; margin-bottom: .2rem; }
+    .ping-subtitle   { font-size: .8rem; color: var(--muted); }
+    .ping-countdown  { font-size: .85rem; font-weight: 700; color: var(--warn); }
+    .ping-countdown.danger { color: var(--error); }
+
+    /* Ping button pulse animation */
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(0,212,170,.5); }
+      70%  { box-shadow: 0 0 0 10px rgba(0,212,170,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,212,170,0); }
+    }
+    .btn-ping {
+      background: linear-gradient(135deg, #00d4aa, #00b894);
+      color: #0a0e1a; font-weight: 700; font-size: .875rem;
+      padding: .65rem 1.4rem; border-radius: 10px; border: none;
+      cursor: pointer; transition: all .2s; animation: pulse 2s infinite;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .btn-ping:hover    { transform: translateY(-2px); opacity: .9; }
+    .btn-ping:disabled { opacity: .6; cursor: not-allowed; animation: none; }
+
+    /* Section header */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: .75rem; }
+    .section-header h2 { font-size: 1.15rem; font-weight: 700; }
+
+    /* Filter tabs */
+    .filter-tabs { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .filter-tab {
+      padding: .35rem .85rem; border-radius: 999px; font-size: .78rem;
+      font-weight: 600; cursor: pointer; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); transition: all .2s;
+    }
+    .filter-tab:hover  { border-color: var(--primary); color: var(--primary); }
+    .filter-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    /* Will card */
+    .will-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; transition: all .2s;
+    }
+    .will-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .will-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; gap: 1rem; }
+    .will-card-title  { font-size: 1rem; font-weight: 700; margin-bottom: .25rem; }
+    .will-card-meta   { font-size: .78rem; color: var(--muted); }
+    .will-card-body   { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap: .85rem; margin-bottom: 1.25rem; }
+    .will-info-label  { font-size: .75rem; color: var(--muted); margin-bottom: .2rem; }
+    .will-info-value  { font-size: .85rem; color: var(--text); font-weight: 500; }
+    .will-card-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+    .will-actions     { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+    /* DMS badge in card */
+    .dms-badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-size: .78rem; padding: .3rem .75rem; border-radius: 999px;
+      font-weight: 600;
+    }
+    .dms-ok     { background: rgba(0,212,170,.1);   color: var(--green); border: 1px solid rgba(0,212,170,.3); }
+    .dms-warn   { background: rgba(255,209,102,.1); color: var(--warn);  border: 1px solid rgba(255,209,102,.3); }
+    .dms-danger { background: rgba(255,107,107,.1); color: var(--error); border: 1px solid rgba(255,107,107,.3); }
+
+    /* Permanent notice banner */
+    .permanent-notice {
+      background: rgba(255,209,102,.07); border: 1px solid rgba(255,209,102,.3);
+      border-radius: 12px; padding: .85rem 1.25rem; margin-bottom: 1.75rem;
+      display: flex; align-items: flex-start; gap: .75rem; font-size: .83rem; color: var(--warn);
+      line-height: 1.6;
+    }
+    .permanent-notice strong { color: var(--warn); display: block; margin-bottom: .15rem; }
+
+    /* Will viewer modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.7);
+      z-index: 200; display: flex; align-items: center;
+      justify-content: center; padding: 1rem;
+    }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 18px; padding: 2rem; width: 100%; max-width: 600px;
+      max-height: 85vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .modal-title  { font-size: 1.15rem; font-weight: 700; }
+    .modal-close  { background: none; border: none; color: var(--muted); font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0; }
+    .modal-close:hover { color: var(--text); }
+
+    .modal-section { margin-bottom: 1.5rem; }
+    .modal-section-title {
+      font-size: .78rem; font-weight: 700; color: var(--primary);
+      text-transform: uppercase; letter-spacing: .06em;
+      margin-bottom: .75rem; padding-bottom: .5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-field { margin-bottom: .85rem; }
+    .modal-field-label { font-size: .78rem; color: var(--muted); margin-bottom: .25rem; }
+    .modal-field-value {
+      font-size: .9rem; color: var(--text);
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: .65rem .9rem; line-height: 1.6;
+    }
+    .modal-field-value.encrypted {
+      font-family: monospace; font-size: .78rem;
+      color: var(--muted); word-break: break-all;
+    }
+
+    .ben-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .6rem .9rem; background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: .5rem; font-size: .85rem;
+    }
+    .ben-row-email { color: var(--text); }
+    .ben-row-alloc { color: var(--green); font-weight: 700; }
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 4rem 2rem;
+      background: var(--surface); border: 1px dashed var(--border); border-radius: 16px;
+    }
+    .empty-icon  { font-size: 3.5rem; margin-bottom: 1rem; }
+    .empty-title { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
+    .empty-text  { color: var(--muted); font-size: .9rem; margin-bottom: 1.5rem; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 1.75rem; right: 1.75rem;
+      border-radius: 10px; padding: .9rem 1.4rem; font-size: .9rem;
+      z-index: 9999; max-width: 340px; font-weight: 500; color: #fff;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5); display: none;
+    }
+    #toast.show { display: block; animation: toastIn .25s ease; }
+    @keyframes toastIn { from { transform: translateX(40px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 600px) {
+      .dash-header { flex-direction: column; align-items: flex-start; }
+      .ping-bar    { flex-direction: column; }
+      .will-card-footer { flex-direction: column; }
+      .will-actions .btn { flex: 1; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">📜</span>
+      <span class="brand-name">DecentralWill</span>
+    </div>
+    <div class="nav-links">
+      <a href="index.html"     class="nav-link">Home</a>
+      <a href="about.html" class="nav-link">About</a>
+      <a href="dashboard.html" class="nav-link active">Dashboard</a>
+    </div>
+    <div class="nav-auth" id="navAuth">
+      <a href="login.html" class="btn btn-outline btn-sm">Sign In</a>
+    </div>
+  </nav>
+
+  <div class="dashboard">
+
+    <!-- Header -->
+    <div class="dash-header">
+      <div>
+        <h1 id="dashGreeting">📊 My Dashboard</h1>
+        <p id="dashSubtitle">Manage your digital wills</p>
+      </div>
+      <a href="create-will.html" class="btn btn-primary">📝 Create New Will</a>
+    </div>
+
+    <!-- Permanent notice -->
+    <div class="permanent-notice">
+      <span style="font-size:1.25rem">🔒</span>
+      <div>
+        <strong>Wills are permanent and immutable</strong>
+        Once created, a will cannot be edited or deleted — this is by design for security.
+        If you need to make changes, create a new will. The most recently activated will takes precedence.
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-mini">
+        <div class="stat-mini-icon">📜</div>
+        <div>
+          <div class="stat-mini-val" id="statTotal">0</div>
+          <div class="stat-mini-lbl">Total Wills</div>
+        </div>
+      </div>
+      <div class="stat-mini">
+        <div class="stat-mini-icon">✅</div>
+        <div>
+          <div class="stat-mini-val" id="statActive">0</div>
+          <div class="stat-mini-lbl">Active</div>
+        </div>
+      </div>
+      <div class="stat-mini">
+        <div class="stat-mini-icon">📋</div>
+        <div>
+          <div class="stat-mini-val" id="statDraft">0</div>
+          <div class="stat-mini-lbl">Drafts</div>
+        </div>
+      </div>
+      <div class="stat-mini">
+        <div class="stat-mini-icon">👥</div>
+        <div>
+          <div class="stat-mini-val" id="statBen">0</div>
+          <div class="stat-mini-lbl">Beneficiaries</div>
+        </div>
+      </div>
+    </div>
+    <!-- Dead Man Switch ping bar (shown only when active wills exist) -->
+    <div class="ping-bar" id="pingBar" style="display:none">
+      <div class="ping-bar-left">
+        <div class="ping-icon">💓</div>
+        <div>
+          <div class="ping-title">Dead Man Switch is Active</div>
+          <div class="ping-subtitle" id="pingSubtitle">
+            Click "I'm Alive" to confirm your activity and reset the timer
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.85rem;flex-wrap:wrap">
+        <span class="ping-countdown" id="pingCountdown"></span>
+        <button class="btn-ping" id="pingBtn" onclick="doPing()">
+          💓 I'm Alive
+        </button>
+      </div>
+    </div>
+
+    <!-- Wills list -->
+    <div class="section-header">
+      <h2>Your Wills</h2>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">All</button>
+        <button class="filter-tab" data-filter="draft">Draft</button>
+        <button class="filter-tab" data-filter="active">Active</button>
+        <button class="filter-tab" data-filter="executed">Executed</button>
+      </div>
+    </div>
+
+    <div id="willsList"></div>
+
+  </div>
+
+  <!-- Will viewer modal -->
+  <div class="modal-overlay hidden" id="viewModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle">📜 Will Details</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    // ── Toast ───────────────────────────────────────────────────
+    function toast(msg, type, dur) {
+      dur = dur  3500;
+      var el = document.getElementById('toast');
+      var colors = { success:'#00b894', error:'#d63031', warning:'#e17055', info:'#6c63ff' };
+      el.textContent      = msg;
+      el.style.background = colors[type]  colors.info;
+      el.classList.add('show');
+      clearTimeout(el._t);
+      el._t = setTimeout(function(){ el.classList.remove('show'); }, dur);
+    }
+
+    // ── Auth ────────────────────────────────────────────────────
+    var currentUser = null;
+    try {
+      var token = localStorage.getItem('dw_token');
+      if (!token) window.location.href = 'login.html';
+      currentUser = JSON.parse(localStorage.getItem('dw_user')  'null');
+      if (currentUser) {
+        document.getElementById('navAuth').innerHTML =
+          '<span style="font-size:.82rem;color:var(--muted);margin-right:.5rem">' +
+          esc(currentUser.name) + '</span>' +
+          '<button onclick="logout()" class="btn btn-outline btn-sm">Sign Out</button>';
+      }
+    } catch(e) {}
+
+    function logout() {
+      localStorage.removeItem('dw_token');
+      localStorage.removeItem('dw_user');
+      window.location.href = 'login.html';
+    }
+
+    // ── State ───────────────────────────────────────────────────
+    var allWills      = [];
+    var currentFilter = 'all';
+
+    // ── Load wills ──────────────────────────────────────────────
+    function loadWills() {
+      // Load from localStorage (Phase 4 will replace with API)
+      try {
+        allWills = JSON.parse(localStorage.getItem('dw_drafts')  '[]');
+      } catch(e) {
+        allWills = [];
+      }
+      renderGreeting();
+      renderStats();
+      renderPingBar();
+      renderWills();
+    }
+
+    // ── Greeting ────────────────────────────────────────────────
+    function renderGreeting() {
+      var hour  = new Date().getHours();
+      var greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+      var name  = currentUser ? ', ' + currentUser.name.split(' ')[0] : '';
+      document.getElementById('dashGreeting').textContent = greet + name + ' 👋';
+      document.getElementById('dashSubtitle').textContent = allWills.length > 0
+        ? 'You have ' + allWills.length + ' will' + (allWills.length !== 1 ? 's' : '') + ' on file'
+        : 'You have no wills yet — create your first one';
+    }
+    // ── Stats ───────────────────────────────────────────────────
+    function renderStats() {
+      document.getElementById('statTotal').textContent  = allWills.length;
+      document.getElementById('statActive').textContent = allWills.filter(function(w){ return w.status === 'active'; }).length;
+      document.getElementById('statDraft').textContent  = allWills.filter(function(w){ return w.status === 'draft'; }).length;
+      var totalBen = allWills.reduce(function(s,w){ return s + ((w.beneficiaries  []).length); }, 0);
+      document.getElementById('statBen').textContent = totalBen;
+    }
+
+    // ── Ping bar ────────────────────────────────────────────────
+    function renderPingBar() {
+      var activeWills = allWills.filter(function(w){
+        return w.status === 'active' && w.deadManSwitch && w.deadManSwitch.isEnabled;
+      });
+
+      var pingBar = document.getElementById('pingBar');
+      if (activeWills.length === 0) {
+        pingBar.style.display = 'none';
+        return;
+      }
+      pingBar.style.display = 'flex';
+
+      // Find soonest trigger date
+      var now = new Date();
+      var soonestDays = Infinity;
+
+      activeWills.forEach(function(w) {
+        var lastPing  = new Date(w.deadManSwitch.lastPing  w.createdAt  now);
+        var inactDays = w.deadManSwitch.inactivityDays  30;
+        var trigger   = new Date(lastPing.getTime() + inactDays * 86400000);
+        var daysLeft  = Math.ceil((trigger - now) / 86400000);
+        if (daysLeft < soonestDays) soonestDays = daysLeft;
+      });
+
+      soonestDays = Math.max(0, soonestDays);
+
+      var countdown = document.getElementById('pingCountdown');
+      var subtitle  = document.getElementById('pingSubtitle');
+
+      if (soonestDays <= 0) {
+        countdown.textContent   = '🚨 Trigger imminent!';
+        countdown.className     = 'ping-countdown danger';
+        pingBar.className       = 'ping-bar urgent';
+        subtitle.textContent    = 'Your dead man switch is about to trigger — ping now!';
+      } else if (soonestDays <= 3) {
+        countdown.textContent   = '⚠️ ' + soonestDays + ' day' + (soonestDays !== 1 ? 's' : '') + ' left!';
+        countdown.className     = 'ping-countdown danger';
+        pingBar.className       = 'ping-bar urgent';
+        subtitle.textContent    = 'Urgent — ping now to prevent execution';
+      } else if (soonestDays <= 7) {
+        countdown.textContent   = soonestDays + ' days remaining';
+        countdown.className     = 'ping-countdown';
+        pingBar.className       = 'ping-bar';
+        subtitle.textContent    = 'Your switch will trigger soon — click "I\'m Alive" to reset';
+      } else {
+        countdown.textContent   = soonestDays + ' days remaining';
+        countdown.className     = 'ping-countdown';
+        pingBar.className       = 'ping-bar';
+        subtitle.textContent    = 'Click "I\'m Alive" to confirm your activity and reset the timer';
+      }
+    }
+
+    // ── Ping action ─────────────────────────────────────────────
+    function doPing() {
+      var btn = document.getElementById('pingBtn');
+      btn.disabled    = true;
+      btn.textContent = '⏳ Confirming...';
+
+      try {
+        // Update lastPing on all active wills in localStorage
+        var updated = allWills.map(function(w) {
+          if (w.status === 'active' && w.deadManSwitch && w.deadManSwitch.isEnabled) {
+            w.deadManSwitch.lastPing = new Date().toISOString();
+          }
+          return w;
+        });
+        localStorage.setItem('dw_drafts', JSON.stringify(updated));
+
+        // Visual feedback
+        var btn2 = document.getElementById('pingBtn');
+        btn2.textContent = '✅ Confirmed!';
+        btn2.style.background = 'linear-gradient(135deg, #6c63ff, #5548e0)';
+        btn2.style.color = '#fff';
+        btn2.style.animation = 'none';
+
+        toast('💓 Activity confirmed! Dead man switch timer has been reset.', 'success', 4000);
+        // Reload data and restore button after 2.5s
+        setTimeout(function() {
+          loadWills();
+          btn2.disabled         = false;
+          btn2.textContent      = '💓 I\'m Alive';
+          btn2.style.background = '';
+          btn2.style.color      = '';
+          btn2.style.animation  = 'pulse 2s infinite';
+        }, 2500);
+
+      } catch(err) {
+        toast('Failed to ping: ' + err.message, 'error');
+        btn.disabled    = false;
+        btn.textContent = '💓 I\'m Alive';
+      }
+    }
+
+    // ── Filter tabs ─────────────────────────────────────────────
+    document.querySelectorAll('.filter-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.filter-tab').forEach(function(t){ t.classList.remove('active'); });
+        tab.classList.add('active');
+        currentFilter = tab.dataset.filter;
+        renderWills();
+      });
+    });
+
+    // ── Render will cards ───────────────────────────────────────
+    function renderWills() {
+      var container = document.getElementById('willsList');
+      var filtered  = currentFilter === 'all'
+        ? allWills
+        : allWills.filter(function(w){ return w.status === currentFilter; });
+
+      if (filtered.length === 0) {
+        container.innerHTML =
+          '<div class="empty-state">' +
+            '<div class="empty-icon">' + (currentFilter === 'all' ? '📜' : '🔍') + '</div>' +
+            '<div class="empty-title">' + (currentFilter === 'all' ? 'No wills yet' : 'No ' + currentFilter + ' wills') + '</div>' +
+            '<div class="empty-text">' +
+              (currentFilter === 'all'
+                ? 'Create your first will to protect your digital legacy.'
+                : 'You have no ' + currentFilter + ' wills at the moment.') +
+            '</div>' +
+            (currentFilter === 'all'
+              ? '<a href="create-will.html" class="btn btn-primary">📝 Create Your First Will</a>'
+              : '') +
+          '</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(function(will) {
+        return buildCard(will);
+      }).join('');
+    }
+
+    function buildCard(w) {
+      var id          = w.id  w.willId  w._id  0;
+      var title       = esc(w.title  'Untitled Will');
+      var status      = w.status  'draft';
+      var createdAt   = w.createdAt ? fmtDate(w.createdAt) : 'Unknown';
+      var network     = w.network  'localhost';
+      var benCount    = (w.beneficiaries  []).length;
+      var statusClass = 'status-' + status;
+
+      // DMS info
+      var dmsHtml = '';
+      if (w.deadManSwitch && w.deadManSwitch.isEnabled) {
+        var lastPing  = new Date(w.deadManSwitch.lastPing  w.createdAt  Date.now());
+        var inactDays = w.deadManSwitch.inactivityDays  30;
+        var trigger   = new Date(lastPing.getTime() + inactDays * 86400000);
+        var daysLeft  = Math.max(0, Math.ceil((trigger - new Date()) / 86400000));
+        var cls       = daysLeft <= 3 ? 'dms-danger' : daysLeft <= 7 ? 'dms-warn' : 'dms-ok';
+        var icon      = daysLeft <= 3 ? '🚨' : daysLeft <= 7 ? '⚠️' : '✅';
+        dmsHtml = '<span class="dms-badge ' + cls + '">' + icon + ' DMS: ' + daysLeft + ' days left</span>';
+      } else {
+        dmsHtml = '<span class="dms-badge" style="background:rgba(136,146,176,.1);color:var(--muted);border:1px solid var(--border)">⏱️ DMS disabled</span>';
+      }
+
+      // IPFS + chain badges
+      var ipfsBadge  = w.ipfsCid
+        ? '<span style="font-size:.75rem;color:var(--green)">🌐 IPFS stored</span>'
+        : '<span style="font-size:.75rem;color:var(--muted)">📋 Not on IPFS yet</span>';
+      var chainBadge = w.contractAddress
+        ? '<span style="font-size:.75rem;color:var(--primary)">⛓️ On-chain</span>'
+        : '<span style="font-size:.75rem;color:var(--muted)">⛓️ Not deployed</span>';
+      // Action buttons — VIEW only for active/executed, VIEW + ACTIVATE for draft
+      var actions = '';
+      actions += '<button class="btn btn-secondary btn-sm" onclick="viewWill(' + id + ')">👁 View Details</button>';
+      if (status === 'draft') {
+        actions += '<button class="btn btn-success btn-sm" onclick="activateWill(' + id + ')">🚀 Activate</button>';
+      }
+
+      return (
+        '<div class="will-card" id="will-' + id + '">' +
+          '<div class="will-card-header">' +
+            '<div>' +
+              '<div class="will-card-title">' + title + '</div>' +
+              '<div class="will-card-meta">Created ' + createdAt + '</div>' +
+            '</div>' +
+            '<span class="status-badge ' + statusClass + '">' + status.toUpperCase() + '</span>' +
+          '</div>' +
+
+          '<div class="will-card-body">' +
+            '<div><div class="will-info-label">👥 Beneficiaries</div><div class="will-info-value">' + benCount + ' person' + (benCount !== 1 ? 's' : '') + '</div></div>' +
+            '<div><div class="will-info-label">⛓️ Network</div><div class="will-info-value">' + network + '</div></div>' +
+            '<div><div class="will-info-label">🌐 IPFS</div><div class="will-info-value">' + ipfsBadge + '</div></div>' +
+            '<div><div class="will-info-label">📡 Chain</div><div class="will-info-value">' + chainBadge + '</div></div>' +
+          '</div>' +
+
+          '<div class="will-card-footer">' +
+            '<div>' + dmsHtml + '</div>' +
+            '<div class="will-actions">' + actions + '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    // ── Activate will ───────────────────────────────────────────
+    function activateWill(id) {
+      var drafts = JSON.parse(localStorage.getItem('dw_drafts')  '[]');
+      var idx    = drafts.findIndex(function(d){ return d.id == id; });
+      if (idx === -1) { toast('Will not found', 'error'); return; }
+
+      drafts[idx].status = 'active';
+      if (!drafts[idx].deadManSwitch) drafts[idx].deadManSwitch = {};
+      drafts[idx].deadManSwitch.lastPing = new Date().toISOString();
+
+      localStorage.setItem('dw_drafts', JSON.stringify(drafts));
+      toast('✅ Will activated! Dead man switch is now running.', 'success', 4000);
+      loadWills();
+    }
+
+    // ── View will modal ─────────────────────────────────────────
+    function viewWill(id) {
+      var will = allWills.find(function(w){ return (w.id  w.willId  w._id) == id; });
+      if (!will) { toast('Will not found', 'error'); return; }
+
+      document.getElementById('modalTitle').textContent = '📜 ' + (will.title  'Untitled Will');
+
+      var bens = (will.beneficiaries  []).map(function(b) {
+        return '<div class="ben-row">' +
+          '<span class="ben-row-email">📧 ' + esc(b.email  b.walletAddress  'Unknown') + '</span>' +
+          '<span class="ben-row-alloc">' + (b.allocationPercent  b.allocation  0) + '%</span>' +
+        '</div>';
+      }).join('')  '<p style="color:var(--muted);font-size:.85rem">No beneficiaries recorded</p>';
+
+      var dms = will.deadManSwitch  {};
+      var lastPing = dms.lastPing ? fmtDate(dms.lastPing) : 'Never';
+      var inactDays = dms.inactivityDays  30;
+
+      // Calculate days left
+      var daysLeftHtml = '';
+      if (dms.isEnabled && dms.lastPing) {
+        var lp       = new Date(dms.lastPing);
+        var trigger  = new Date(lp.getTime() + inactDays * 86400000);
+        var daysLeft = Math.max(0, Math.ceil((trigger - new Date()) / 86400000));
+        daysLeftHtml = '<div class="modal-field">' +
+          '<div class="modal-field-label">⏳ Days Until Trigger</div>' +
+          '<div class="modal-field-value" style="color:' + (daysLeft <= 3 ? 'var(--error)' : daysLeft <= 7 ? 'var(--warn)' : 'var(--green)') + ';font-weight:700">' +
+            daysLeft + ' days' +
+          '</div>' +
+        '</div>';
+      }
+    document.getElementById('modalBody').innerHTML =
+        // General info
+        '<div class="modal-section">' +
+          '<div class="modal-section-title">General Information</div>' +
+          '<div class="modal-field"><div class="modal-field-label">Title</div><div class="modal-field-value">' + esc(will.title  '—') + '</div></div>' +
+          '<div class="modal-field"><div class="modal-field-label">Status</div><div class="modal-field-value"><span class="status-badge status-' + (will.status'draft') + '">' + (will.status||'draft').toUpperCase() + '</span></div></div>' +
+          '<div class="modal-field"><div class="modal-field-label">Created</div><div class="modal-field-value">' + fmtDate(will.createdAt) + '</div></div>' +
+          '<div class="modal-field"><div class="modal-field-label">Network</div><div class="modal-field-value">' + (will.network||'localhost') + '</div></div>' +
+        '</div>' +
+
+        // Will content
+        '<div class="modal-section">' +
+          '<div class="modal-section-title">Will Content</div>' +
+          (will.ipfsCid
+            ? '<div class="modal-field"><div class="modal-field-label">IPFS CID (encrypted)</div><div class="modal-field-value encrypted">' + esc(will.ipfsCid) + '</div></div>'
+            : '<div class="modal-field"><div class="modal-field-value" style="color:var(--muted)">' +
+                (will.content
+                  ? '<em>Content preview (not yet encrypted/uploaded to IPFS):</em><br><br>' + esc(will.content.slice(0, 200)) + (will.content.length > 200 ? '…' : '')
+                  : 'No content recorded') +
+              '</div></div>'
+          ) +
+        '</div>' +
+
+        // Beneficiaries
+        '<div class="modal-section">' +
+          '<div class="modal-section-title">Beneficiaries</div>' +
+          bens +
+        '</div>' +
+
+        // Dead man switch
+        '<div class="modal-section">' +
+          '<div class="modal-section-title">Dead Man Switch</div>' +
+          '<div class="modal-field"><div class="modal-field-label">Status</div><div class="modal-field-value">' + (dms.isEnabled ? '✅ Enabled' : '❌ Disabled') + '</div></div>' +
+          (dms.isEnabled
+            ? '<div class="modal-field"><div class="modal-field-label">Inactivity Period</div><div class="modal-field-value">' + inactDays + ' days</div></div>' +
+              '<div class="modal-field"><div class="modal-field-label">Last Ping</div><div class="modal-field-value">' + lastPing + '</div></div>' +
+              daysLeftHtml
+            : '') +
+        '</div>' +
+      // Blockchain
+        (will.contractAddress  will.transactionHash
+          ? '<div class="modal-section">' +
+              '<div class="modal-section-title">Blockchain</div>' +
+              (will.contractAddress ? '<div class="modal-field"><div class="modal-field-label">Contract Address</div><div class="modal-field-value encrypted">' + esc(will.contractAddress) + '</div></div>' : '') +
+              (will.transactionHash ? '<div class="modal-field"><div class="modal-field-label">Transaction Hash</div><div class="modal-field-value encrypted">' + esc(will.transactionHash) + '</div></div>' : '') +
+            '</div>'
+          : '') +
+
+        // Immutability notice
+        '<div style="background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.25);border-radius:10px;padding:.85rem 1rem;font-size:.8rem;color:var(--warn);margin-top:.5rem">' +
+          '🔒 This will is permanent and cannot be modified or deleted. To make changes, create a new will.' +
+        '</div>';
+
+      document.getElementById('viewModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('viewModal').classList.add('hidden');
+    }
+
+    // Close on overlay click
+    document.getElementById('viewModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // ── Helpers ─────────────────────────────────────────────────
+    function esc(str) {
+      return String(str  '').replace(/[&<>"']/g, function(c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+
+    function fmtDate(d) {
+      if (!d) return '—';
+      return new Intl.DateTimeFormat('en-US', {
+        year:'numeric', month:'short', day:'numeric',
+        hour:'2-digit', minute:'2-digit'
+      }).format(new Date(d));
+    }
+
+    // ── Init ────────────────────────────────────────────────────
+    loadWills();
+  </script>
+</body>
+</html>
