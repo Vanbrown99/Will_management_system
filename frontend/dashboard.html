@@ -67,6 +67,7 @@
     }
     .filter-tab:hover  { border-color: var(--primary); color: var(--primary); }
     .filter-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
     /* Will card */
     .will-card {
       background: var(--surface); border: 1px solid var(--border);
@@ -144,6 +145,7 @@
     }
     .ben-row-email { color: var(--text); }
     .ben-row-alloc { color: var(--green); font-weight: 700; }
+
     /* Empty state */
     .empty-state {
       text-align: center; padding: 4rem 2rem;
@@ -242,6 +244,7 @@
         </div>
       </div>
     </div>
+
     <!-- Dead Man Switch ping bar (shown only when active wills exist) -->
     <div class="ping-bar" id="pingBar" style="display:none">
       <div class="ping-bar-left">
@@ -292,11 +295,11 @@
   <script>
     // ── Toast ───────────────────────────────────────────────────
     function toast(msg, type, dur) {
-      dur = dur  3500;
+      dur = dur || 3500;
       var el = document.getElementById('toast');
       var colors = { success:'#00b894', error:'#d63031', warning:'#e17055', info:'#6c63ff' };
       el.textContent      = msg;
-      el.style.background = colors[type]  colors.info;
+      el.style.background = colors[type] || colors.info;
       el.classList.add('show');
       clearTimeout(el._t);
       el._t = setTimeout(function(){ el.classList.remove('show'); }, dur);
@@ -307,7 +310,7 @@
     try {
       var token = localStorage.getItem('dw_token');
       if (!token) window.location.href = 'login.html';
-      currentUser = JSON.parse(localStorage.getItem('dw_user')  'null');
+      currentUser = JSON.parse(localStorage.getItem('dw_user') || 'null');
       if (currentUser) {
         document.getElementById('navAuth').innerHTML =
           '<span style="font-size:.82rem;color:var(--muted);margin-right:.5rem">' +
@@ -330,7 +333,7 @@
     function loadWills() {
       // Load from localStorage (Phase 4 will replace with API)
       try {
-        allWills = JSON.parse(localStorage.getItem('dw_drafts')  '[]');
+        allWills = JSON.parse(localStorage.getItem('dw_drafts') || '[]');
       } catch(e) {
         allWills = [];
       }
@@ -350,12 +353,13 @@
         ? 'You have ' + allWills.length + ' will' + (allWills.length !== 1 ? 's' : '') + ' on file'
         : 'You have no wills yet — create your first one';
     }
+
     // ── Stats ───────────────────────────────────────────────────
     function renderStats() {
       document.getElementById('statTotal').textContent  = allWills.length;
       document.getElementById('statActive').textContent = allWills.filter(function(w){ return w.status === 'active'; }).length;
       document.getElementById('statDraft').textContent  = allWills.filter(function(w){ return w.status === 'draft'; }).length;
-      var totalBen = allWills.reduce(function(s,w){ return s + ((w.beneficiaries  []).length); }, 0);
+      var totalBen = allWills.reduce(function(s,w){ return s + ((w.beneficiaries || []).length); }, 0);
       document.getElementById('statBen').textContent = totalBen;
     }
 
@@ -377,8 +381,8 @@
       var soonestDays = Infinity;
 
       activeWills.forEach(function(w) {
-        var lastPing  = new Date(w.deadManSwitch.lastPing  w.createdAt  now);
-        var inactDays = w.deadManSwitch.inactivityDays  30;
+        var lastPing  = new Date(w.deadManSwitch.lastPing || w.createdAt || now);
+        var inactDays = w.deadManSwitch.inactivityDays || 30;
         var trigger   = new Date(lastPing.getTime() + inactDays * 86400000);
         var daysLeft  = Math.ceil((trigger - now) / 86400000);
         if (daysLeft < soonestDays) soonestDays = daysLeft;
@@ -436,6 +440,7 @@
         btn2.style.animation = 'none';
 
         toast('💓 Activity confirmed! Dead man switch timer has been reset.', 'success', 4000);
+
         // Reload data and restore button after 2.5s
         setTimeout(function() {
           loadWills();
@@ -493,19 +498,19 @@
     }
 
     function buildCard(w) {
-      var id          = w.id  w.willId  w._id  0;
-      var title       = esc(w.title  'Untitled Will');
-      var status      = w.status  'draft';
+      var id          = w.id || w.willId || w._id || 0;
+      var title       = esc(w.title || 'Untitled Will');
+      var status      = w.status || 'draft';
       var createdAt   = w.createdAt ? fmtDate(w.createdAt) : 'Unknown';
-      var network     = w.network  'localhost';
-      var benCount    = (w.beneficiaries  []).length;
+      var network     = w.network || 'localhost';
+      var benCount    = (w.beneficiaries || []).length;
       var statusClass = 'status-' + status;
 
       // DMS info
       var dmsHtml = '';
       if (w.deadManSwitch && w.deadManSwitch.isEnabled) {
-        var lastPing  = new Date(w.deadManSwitch.lastPing  w.createdAt  Date.now());
-        var inactDays = w.deadManSwitch.inactivityDays  30;
+        var lastPing  = new Date(w.deadManSwitch.lastPing || w.createdAt || Date.now());
+        var inactDays = w.deadManSwitch.inactivityDays || 30;
         var trigger   = new Date(lastPing.getTime() + inactDays * 86400000);
         var daysLeft  = Math.max(0, Math.ceil((trigger - new Date()) / 86400000));
         var cls       = daysLeft <= 3 ? 'dms-danger' : daysLeft <= 7 ? 'dms-warn' : 'dms-ok';
@@ -522,6 +527,7 @@
       var chainBadge = w.contractAddress
         ? '<span style="font-size:.75rem;color:var(--primary)">⛓️ On-chain</span>'
         : '<span style="font-size:.75rem;color:var(--muted)">⛓️ Not deployed</span>';
+
       // Action buttons — VIEW only for active/executed, VIEW + ACTIVATE for draft
       var actions = '';
       actions += '<button class="btn btn-secondary btn-sm" onclick="viewWill(' + id + ')">👁 View Details</button>';
@@ -556,7 +562,7 @@
 
     // ── Activate will ───────────────────────────────────────────
     function activateWill(id) {
-      var drafts = JSON.parse(localStorage.getItem('dw_drafts')  '[]');
+      var drafts = JSON.parse(localStorage.getItem('dw_drafts') || '[]');
       var idx    = drafts.findIndex(function(d){ return d.id == id; });
       if (idx === -1) { toast('Will not found', 'error'); return; }
 
@@ -571,21 +577,21 @@
 
     // ── View will modal ─────────────────────────────────────────
     function viewWill(id) {
-      var will = allWills.find(function(w){ return (w.id  w.willId  w._id) == id; });
+      var will = allWills.find(function(w){ return (w.id || w.willId || w._id) == id; });
       if (!will) { toast('Will not found', 'error'); return; }
 
-      document.getElementById('modalTitle').textContent = '📜 ' + (will.title  'Untitled Will');
+      document.getElementById('modalTitle').textContent = '📜 ' + (will.title || 'Untitled Will');
 
-      var bens = (will.beneficiaries  []).map(function(b) {
+      var bens = (will.beneficiaries || []).map(function(b) {
         return '<div class="ben-row">' +
-          '<span class="ben-row-email">📧 ' + esc(b.email  b.walletAddress  'Unknown') + '</span>' +
-          '<span class="ben-row-alloc">' + (b.allocationPercent  b.allocation  0) + '%</span>' +
+          '<span class="ben-row-email">📧 ' + esc(b.email || b.walletAddress || 'Unknown') + '</span>' +
+          '<span class="ben-row-alloc">' + (b.allocationPercent || b.allocation || 0) + '%</span>' +
         '</div>';
-      }).join('')  '<p style="color:var(--muted);font-size:.85rem">No beneficiaries recorded</p>';
+      }).join('') || '<p style="color:var(--muted);font-size:.85rem">No beneficiaries recorded</p>';
 
-      var dms = will.deadManSwitch  {};
+      var dms = will.deadManSwitch || {};
       var lastPing = dms.lastPing ? fmtDate(dms.lastPing) : 'Never';
-      var inactDays = dms.inactivityDays  30;
+      var inactDays = dms.inactivityDays || 30;
 
       // Calculate days left
       var daysLeftHtml = '';
@@ -600,12 +606,13 @@
           '</div>' +
         '</div>';
       }
-    document.getElementById('modalBody').innerHTML =
+
+      document.getElementById('modalBody').innerHTML =
         // General info
         '<div class="modal-section">' +
           '<div class="modal-section-title">General Information</div>' +
-          '<div class="modal-field"><div class="modal-field-label">Title</div><div class="modal-field-value">' + esc(will.title  '—') + '</div></div>' +
-          '<div class="modal-field"><div class="modal-field-label">Status</div><div class="modal-field-value"><span class="status-badge status-' + (will.status'draft') + '">' + (will.status||'draft').toUpperCase() + '</span></div></div>' +
+          '<div class="modal-field"><div class="modal-field-label">Title</div><div class="modal-field-value">' + esc(will.title || '—') + '</div></div>' +
+          '<div class="modal-field"><div class="modal-field-label">Status</div><div class="modal-field-value"><span class="status-badge status-' + (will.status||'draft') + '">' + (will.status||'draft').toUpperCase() + '</span></div></div>' +
           '<div class="modal-field"><div class="modal-field-label">Created</div><div class="modal-field-value">' + fmtDate(will.createdAt) + '</div></div>' +
           '<div class="modal-field"><div class="modal-field-label">Network</div><div class="modal-field-value">' + (will.network||'localhost') + '</div></div>' +
         '</div>' +
@@ -639,8 +646,9 @@
               daysLeftHtml
             : '') +
         '</div>' +
-      // Blockchain
-        (will.contractAddress  will.transactionHash
+
+        // Blockchain
+        (will.contractAddress || will.transactionHash
           ? '<div class="modal-section">' +
               '<div class="modal-section-title">Blockchain</div>' +
               (will.contractAddress ? '<div class="modal-field"><div class="modal-field-label">Contract Address</div><div class="modal-field-value encrypted">' + esc(will.contractAddress) + '</div></div>' : '') +
@@ -672,7 +680,7 @@
 
     // ── Helpers ─────────────────────────────────────────────────
     function esc(str) {
-      return String(str  '').replace(/[&<>"']/g, function(c) {
+      return String(str || '').replace(/[&<>"']/g, function(c) {
         return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
       });
     }
