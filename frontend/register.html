@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — DecentralWill</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">📜</span>
+      <span class="brand-name">DecentralWill</span>
+    </div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="about.html" class="nav-link">About</a>
+      <a href="login.html" class="nav-link">Login</a>
+    </div>
+  </nav>
+
+  <main class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-icon">📝</div>
+        <h1>Create Account</h1>
+        <p>Start securing your digital legacy today</p>
+      </div>
+
+      <div id="alertBox" class="alert hidden"></div>
+
+      <form id="registerForm" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="name">Full Name</label>
+          <input
+            type="text" id="name" name="name"
+            class="form-input" placeholder="John Doe"
+            autocomplete="name" required
+          />
+          <span class="form-error hidden" id="nameError"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input
+            type="email" id="email" name="email"
+            class="form-input" placeholder="you@example.com"
+            autocomplete="email" required
+          />
+          <span class="form-error hidden" id="emailError"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-group">
+            <input
+              type="password" id="password" name="password"
+              class="form-input" placeholder="Min 8 chars, 1 uppercase, 1 number"
+              autocomplete="new-password" required
+            />
+            <button type="button" class="input-toggle" id="togglePassword">👁️</button>
+          </div>
+          <div class="password-strength hidden" id="strengthBar">
+            <div class="strength-fill" id="strengthFill"></div>
+          </div>
+          <span class="form-hint">Min 8 characters, one uppercase letter and one number</span>
+          <span class="form-error hidden" id="passwordError"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirmPassword">Confirm Password</label>
+          <input
+            type="password" id="confirmPassword" name="confirmPassword"
+            class="form-input" placeholder="Repeat your password"
+            autocomplete="new-password" required
+          />
+          <span class="form-error hidden" id="confirmError"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ethereumAddress">
+            Ethereum Address <span class="text-muted">(optional)</span>
+          </label>
+          <input
+            type="text" id="ethereumAddress" name="ethereumAddress"
+            class="form-input font-mono" placeholder="0x..."
+          />
+          <span class="form-hint">Required only if you plan to use blockchain features</span>
+          <span class="form-error hidden" id="ethError"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+          Create Account
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p>Already have an account? <a href="login.html">Sign in →</a></p>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+      window.location.href = 'dashboard.html';
+    }
+
+    document.getElementById('password').addEventListener('input', (e) => {
+      const bar  = document.getElementById('strengthBar');
+      const fill = document.getElementById('strengthFill');
+      const pw   = e.target.value;
+      bar.classList.remove('hidden');
+      let score = 0;
+      if (pw.length >= 8)          score++;
+      if (pw.length >= 12)         score++;
+      if (/[A-Z]/.test(pw))        score++;
+      if (/[0-9]/.test(pw))        score++;
+      if (/[^A-Za-z0-9]/.test(pw)) score++;
+      const levels = [
+        { pct: '20%',  color: '#ff4444' },
+        { pct: '40%',  color: '#ff8800' },
+        { pct: '60%',  color: '#ffcc00' },
+        { pct: '80%',  color: '#88cc00' },
+        { pct: '100%', color: '#00cc66' },
+      ];
+      const lvl = levels[Math.max(0, score - 1)];
+      fill.style.width      = lvl.pct;
+      fill.style.background = lvl.color;
+    });
+
+    document.getElementById('togglePassword').addEventListener('click', () => {
+      const input = document.getElementById('password');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pw  = document.getElementById('password').value;
+      const cpw = document.getElementById('confirmPassword').value;
+      const confirmErr = document.getElementById('confirmError');
+      if (pw !== cpw) {
+        confirmErr.textContent = 'Passwords do not match';
+        confirmErr.classList.remove('hidden');
+        return;
+      }
+      confirmErr.classList.add('hidden');
+      if (typeof Auth !== 'undefined') {
+        await Auth.register({
+          name:            document.getElementById('name').value,
+          email:           document.getElementById('email').value,
+          password:        pw,
+          ethereumAddress: document.getElementById('ethereumAddress').value || undefined,
+        });
+      }
+    });
+  </script>
+</body>
+</html>
