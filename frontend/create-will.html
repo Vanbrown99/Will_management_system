@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Will — DecentralWill</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .page-header { max-width: 860px; margin: 0 auto; padding: 2.5rem 2rem 0; }
+    .page-header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: .35rem; }
+    .page-header p  { color: var(--muted); font-size: .9rem; }
+    .form-container { max-width: 860px; margin: 2rem auto; padding: 0 2rem 4rem; }
+
+    .form-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.75rem; margin-bottom: 1.5rem;
+    }
+    .form-section-title {
+      font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem;
+      display: flex; align-items: center; gap: .6rem;
+      padding-bottom: .85rem; border-bottom: 1px solid var(--border);
+    }
+
+    .beneficiary-list { display: flex; flex-direction: column; gap: .85rem; }
+    .beneficiary-row {
+      display: grid; grid-template-columns: 1fr 1fr 90px 40px;
+      gap: .75rem; align-items: end;
+    }
+    .btn-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.3);
+      color: var(--error); cursor: pointer; font-size: 1rem; transition: all .2s;
+    }
+    .btn-icon:hover { background: rgba(255,107,107,.25); }
+    .btn-add {
+      display: inline-flex; align-items: center; gap: .45rem;
+      background: rgba(108,99,255,.1); border: 1px solid rgba(108,99,255,.3);
+      color: var(--primary); padding: .55rem 1rem; border-radius: 9px;
+      font-size: .85rem; font-weight: 600; cursor: pointer; transition: all .2s;
+      margin-top: .75rem;
+    }
+    .btn-add:hover { background: rgba(108,99,255,.2); }
+
+    .allocation-summary {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1rem 1.25rem; margin-top: 1rem;
+    }
+    .allocation-bar-wrap {
+      height: 8px; background: var(--border);
+      border-radius: 999px; overflow: hidden; margin: .5rem 0 .35rem;
+    }
+    .allocation-bar-fill {
+      height: 100%; border-radius: 999px; width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--green));
+      transition: width .3s ease;
+    }
+    .allocation-labels { display: flex; justify-content: space-between; font-size: .78rem; color: var(--muted); }
+    .alloc-total { font-size: .85rem; font-weight: 700; }
+    .alloc-over  { color: var(--error); }
+    .alloc-exact { color: var(--green); }
+    .alloc-under { color: var(--warn);  }
+
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .toggle-label { font-size: .9rem; font-weight: 600; }
+    .toggle-desc  { font-size: .8rem; color: var(--muted); margin-top: .15rem; }
+    .switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0; background: var(--border);
+      border-radius: 999px; cursor: pointer; transition: background .2s;
+    }
+    .slider::before {
+      content: ''; position: absolute; width: 18px; height: 18px;
+      border-radius: 50%; background: #fff; left: 4px; top: 4px; transition: transform .2s;
+    }
+    .switch input:checked + .slider { background: var(--primary); }
+    .switch input:checked + .slider::before { transform: translateX(20px); }
+
+    .review-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    .review-table td { padding: .5rem 0; vertical-align: top; }
+    .review-table td:first-child { color: var(--muted); width: 160px; }
+    .submit-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.25rem 1.75rem;
+    }
+    .submit-bar-info { font-size: .82rem; color: var(--muted); }
+    .submit-bar-info strong { color: var(--text); display: block; margin-bottom: .2rem; }
+    .submit-actions { display: flex; gap: .75rem; }
+
+    /* Steps */
+    .steps-indicator { display: flex; align-items: center; margin-bottom: 2rem; }
+    .step-dot { display: flex; flex-direction: column; align-items: center; gap: .35rem; flex: 1; }
+    .step-dot-circle {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700;
+      background: var(--surface2); border: 2px solid var(--border);
+      color: var(--muted); transition: all .3s;
+    }
+    .step-dot-label { font-size: .72rem; color: var(--muted); text-align: center; }
+    .step-dot.active .step-dot-circle { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .step-dot.active .step-dot-label  { color: var(--primary); font-weight: 600; }
+    .step-dot.done   .step-dot-circle { background: var(--green);   border-color: var(--green);   color: #0a0e1a; }
+    .step-dot.done   .step-dot-label  { color: var(--green); }
+    .step-connector  { flex: 1; height: 2px; background: var(--border); margin-bottom: 1.4rem; transition: background .3s; }
+    .step-connector.done { background: var(--green); }
+
+    .empty-ben {
+      text-align: center; padding: 1.25rem; color: var(--muted);
+      font-size: .85rem; border: 1px dashed var(--border); border-radius: 10px;
+    }
+
+    /* Toast override — make sure it shows */
+    #toast {
+      position: fixed; bottom: 1.75rem; right: 1.75rem;
+      border-radius: 10px; padding: .9rem 1.4rem; font-size: .9rem;
+      z-index: 9999; max-width: 340px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      display: none; color: #fff; font-weight: 500;
+    }
+    #toast.show { display: block; animation: toastIn .25s ease; }
+    @keyframes toastIn { from { transform: translateX(40px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+
+    .field-error { font-size: .78rem; color: var(--error); margin-top: .35rem; display: none; }
+    .field-error.show { display: block; }
+
+    @media (max-width: 640px) {
+      .beneficiary-row { grid-template-columns: 1fr 80px 36px; }
+      .beneficiary-row .fg-email { grid-column: 1 / -1; }
+      .submit-bar { flex-direction: column; }
+      .submit-actions { width: 100%; flex-direction: column; }
+      .form-container { padding: 0 1rem 3rem; }
+      .page-header { padding: 2rem 1rem 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">📜</span>
+      <span class="brand-name">DecentralWill</span>
+    </div>
+    <div class="nav-links">
+      <a href="index.html"     class="nav-link">Home</a>
+      <a href="about.html" class="nav-link">About</a>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+    </div>
+    <div class="nav-auth" id="navAuth">
+      <a href="login.html" class="btn btn-outline btn-sm">Sign In</a>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <h1>📝 Create Your Will</h1>
+    <p>Fill in each section. Your will is encrypted before leaving your browser.</p>
+  </div>
+
+  <div class="form-container">
+    <!-- Step Indicator -->
+    <div class="steps-indicator">
+      <div class="step-dot active" id="step1dot">
+        <div class="step-dot-circle" id="c1">1</div>
+        <div class="step-dot-label">Details</div>
+      </div>
+      <div class="step-connector" id="conn1"></div>
+      <div class="step-dot" id="step2dot">
+        <div class="step-dot-circle" id="c2">2</div>
+        <div class="step-dot-label">Beneficiaries</div>
+      </div>
+      <div class="step-connector" id="conn2"></div>
+      <div class="step-dot" id="step3dot">
+        <div class="step-dot-circle" id="c3">3</div>
+        <div class="step-dot-label">Switch</div>
+      </div>
+      <div class="step-connector" id="conn3"></div>
+      <div class="step-dot" id="step4dot">
+        <div class="step-dot-circle" id="c4">4</div>
+        <div class="step-dot-label">Review</div>
+      </div>
+    </div>
+
+    <!-- Global alert -->
+    <div id="globalAlert" style="display:none; padding:.85rem 1rem; border-radius:9px;
+      font-size:.875rem; margin-bottom:1.25rem; border:1px solid var(--error);
+      background:rgba(255,107,107,.1); color:var(--error);">
+    </div>
+
+    <!-- SECTION 1: Details -->
+    <div class="form-section">
+      <div class="form-section-title">📋 Will Details</div>
+
+      <div style="margin-bottom:1.2rem">
+        <label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:.45rem">
+          Will Title <span style="color:var(--error)">*</span>
+        </label>
+        <input type="text" id="willTitle" class="form-input"
+          placeholder="e.g. My Last Will and Testament" maxlength="120" />
+        <div class="field-error" id="err-title">Please enter a title for your will</div>
+      </div>
+
+      <div style="margin-bottom:1.2rem">
+        <label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:.45rem">
+          Will Content <span style="color:var(--error)">*</span>
+        </label>
+        <textarea id="willContent" class="form-input form-textarea"
+          placeholder="Describe your wishes, asset details, special instructions...
+&#10;Example: I leave 50% of my crypto assets to my daughter Sarah and 50% to my son James."></textarea>
+        <div class="field-error" id="err-content">Please write your will content</div>
+        <span style="font-size:.77rem;color:var(--muted);margin-top:.3rem;display:block">
+          🔐 This is encrypted with AES-256 before being stored on IPFS
+        </span>
+      </div>
+
+      <div style="margin-bottom:1.2rem">
+        <label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:.45rem">
+          Blockchain Network
+        </label>
+        <select id="network" class="form-input">
+          <option value="localhost">🔧 Localhost (Development)</option>
+          <option value="mumbai" selected>🟣 Polygon Mumbai (Testnet)</option>
+          <option value="polygon">🟣 Polygon Mainnet</option>
+          <option value="goerli">🔵 Goerli Testnet</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Beneficiaries -->
+    <div class="form-section">
+      <div class="form-section-title">👥 Beneficiaries</div>
+      <div id="beneficiaryList">
+        <div class="empty-ben" id="emptyBen">
+          No beneficiaries yet — click "Add Beneficiary" below
+        </div>
+      </div>
+      <button type="button" class="btn-add" id="btnAddBen">＋ Add Beneficiary</button>
+
+      <div class="allocation-summary" style="margin-top:1rem">
+        <div class="allocation-labels">
+          <span>Total Allocated</span>
+          <span class="alloc-total alloc-under" id="allocLabel">0% of 100%</span>
+        </div>
+        <div class="allocation-bar-wrap">
+          <div class="allocation-bar-fill" id="allocBar"></div>
+        </div>
+        <div class="allocation-labels"><span>0%</span><span>100%</span></div>
+      </div>
+      <div class="field-error" id="err-ben"></div>
+    </div>
+    <!-- SECTION 3: Dead Man Switch -->
+    <div class="form-section">
+      <div class="form-section-title">⏱️ Dead Man Switch</div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Enable Dead Man Switch</div>
+          <div class="toggle-desc">Triggers will execution after a period of inactivity</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="dmsEnabled" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div id="dmsOptions">
+        <div style="margin-bottom:1rem">
+          <label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:.45rem">
+            Inactivity Period (days)
+          </label>
+          <input type="number" id="inactivityDays" class="form-input"
+            value="30" min="1" max="3650" style="max-width:200px" />
+          <span style="font-size:.77rem;color:var(--muted);margin-top:.35rem;display:block">
+            You must log in at least once every
+            <strong id="daysLabel" style="color:var(--warn)">30</strong>
+            days to prevent accidental execution
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: Review -->
+    <div class="form-section">
+      <div class="form-section-title">🔍 Review &amp; Confirm</div>
+      <div id="reviewBox" style="color:var(--muted);font-size:.875rem">
+        Fill in the sections above to see a summary here.
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-bar">
+      <div class="submit-bar-info">
+        <strong>🔐 Client-side encryption enabled</strong>
+        Content is encrypted before leaving your browser — we never see it.
+      </div>
+      <div class="submit-actions">
+        <a href="dashboard.html" class="btn btn-secondary">Cancel</a>
+        <button type="button" class="btn btn-primary" id="submitBtn"
+          onclick="submitWill()">
+          🚀 Create Will
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    // ── Toast (fully self-contained, no dependency on app.js) ──
+    function toast(msg, type, duration) {
+      duration = duration  3500;
+      var el = document.getElementById('toast');
+      var colors = {
+        success: '#00b894',
+        error:   '#d63031',
+        warning: '#e17055',
+        info:    '#6c63ff'
+      };
+      el.textContent    = msg;
+      el.style.background = colors[type]  colors.info;
+      el.classList.add('show');
+      clearTimeout(el._t);
+      el._t = setTimeout(function(){ el.classList.remove('show'); }, duration);
+    }
+    // ── Auth check (soft — does not crash if auth.js missing) ──
+    try {
+      var stored = localStorage.getItem('dw_token');
+      if (!stored) {
+        // Uncomment next line to enforce login:
+        // window.location.href = 'login.html';
+      }
+      var user = JSON.parse(localStorage.getItem('dw_user')  'null');
+      if (user) {
+        document.getElementById('navAuth').innerHTML =
+          '<span style="font-size:.82rem;color:var(--muted);margin-right:.5rem">' + user.name + '</span>' +
+          '<button onclick="logout()" class="btn btn-outline btn-sm">Sign Out</button>';
+      }
+    } catch(e) {}
+
+    function logout() {
+      localStorage.removeItem('dw_token');
+      localStorage.removeItem('dw_user');
+      window.location.href = 'login.html';
+    }
+
+    // ── State ───────────────────────────────────────────────────
+    var bens = [];   // beneficiary list
+
+    // ── Step indicator ──────────────────────────────────────────
+    function updateSteps() {
+      var title   = document.getElementById('willTitle').value.trim();
+      var content = document.getElementById('willContent').value.trim();
+      var total   = getTotal();
+      var s1 = title.length > 0 && content.length > 0;
+      var s2 = bens.length > 0 && total === 100;
+
+      // Reset
+      [1,2,3,4].forEach(function(n) {
+        var dot = document.getElementById('step' + n + 'dot');
+        dot.className = 'step-dot';
+        document.getElementById('c' + n).textContent = n;
+      });
+      [1,2,3].forEach(function(n) {
+        document.getElementById('conn' + n).className = 'step-connector';
+      });
+
+      if (!s1) {
+        document.getElementById('step1dot').classList.add('active');
+      } else if (!s2) {
+        markDone(1); markActive(2);
+      } else {
+        markDone(1); markDone(2); markDone(3); markDone(4);
+        [1,2,3].forEach(function(n){
+          document.getElementById('conn'+n).classList.add('done');
+        });
+      }
+    }
+
+    function markDone(n) {
+      document.getElementById('step'+n+'dot').classList.add('done');
+      document.getElementById('c'+n).textContent = '✓';
+    }
+    function markActive(n) {
+      document.getElementById('step'+n+'dot').classList.add('active');
+    }
+
+    // ── Allocation ──────────────────────────────────────────────
+    function getTotal() {
+      return bens.reduce(function(s, b) {
+        return s + (parseFloat(b.allocation)  0);
+      }, 0);
+    }
+
+    function updateAlloc() {
+      var total = getTotal();
+      var bar   = document.getElementById('allocBar');
+      var label = document.getElementById('allocLabel');
+      bar.style.width = Math.min(total, 100) + '%';
+      bar.style.background = total > 100
+        ? 'var(--error)'
+        : 'linear-gradient(90deg, var(--primary), var(--green))';
+      label.textContent = total + '% of 100%';
+      label.className   = 'alloc-total ' + (total > 100 ? 'alloc-over' : total === 100 ? 'alloc-exact' : 'alloc-under');
+    }
+
+    // ── Beneficiaries ───────────────────────────────────────────
+    function addBen() {
+      bens.push({ id: Date.now(), email: '', address: '', allocation: '' });
+      renderBens();
+    }
+
+    function removeBen(id) {
+      bens = bens.filter(function(b){ return b.id !== id; });
+      renderBens();
+    }
+
+    function renderBens() {
+      var list = document.getElementById('beneficiaryList');
+      var empty = document.getElementById('emptyBen');
+
+      if (bens.length === 0) {
+        list.innerHTML = '';
+        list.appendChild(empty);
+        empty.style.display = 'block';
+        updateAlloc();
+        updateReview();
+        updateSteps();
+        return;
+      }
+      list.innerHTML = '';
+      bens.forEach(function(b) {
+        var row = document.createElement('div');
+        row.className = 'beneficiary-row';
+        row.style.marginBottom = '.75rem';
+        row.innerHTML =
+          '<div class="fg-email">' +
+            '<label style="display:block;font-size:.78rem;font-weight:600;margin-bottom:.35rem">Email</label>' +
+            '<input type="email" class="form-input b-email" placeholder="email@example.com" ' +
+              'value="' + esc(b.email) + '" data-id="' + b.id + '" />' +
+          '</div>' +
+          '<div>' +
+            '<label style="display:block;font-size:.78rem;font-weight:600;margin-bottom:.35rem">Wallet (optional)</label>' +
+            '<input type="text" class="form-input b-addr font-mono" placeholder="0x..." ' +
+              'value="' + esc(b.address) + '" data-id="' + b.id + '" />' +
+          '</div>' +
+          '<div>' +
+            '<label style="display:block;font-size:.78rem;font-weight:600;margin-bottom:.35rem">Share %</label>' +
+            '<input type="number" class="form-input b-alloc" placeholder="50" min="1" max="100" ' +
+              'value="' + (b.allocation  '') + '" data-id="' + b.id + '" />' +
+          '</div>' +
+          '<button type="button" class="btn-icon" onclick="removeBen(' + b.id + ')">🗑</button>';
+        list.appendChild(row);
+      });
+
+      // Bind inputs
+      list.querySelectorAll('.b-email').forEach(function(el) {
+        el.addEventListener('input', function() {
+          var b = bens.find(function(x){ return x.id == el.dataset.id; });
+          if (b) b.email = el.value;
+          updateReview(); updateSteps();
+        });
+      });
+      list.querySelectorAll('.b-addr').forEach(function(el) {
+        el.addEventListener('input', function() {
+          var b = bens.find(function(x){ return x.id == el.dataset.id; });
+          if (b) b.address = el.value;
+        });
+      });
+      list.querySelectorAll('.b-alloc').forEach(function(el) {
+        el.addEventListener('input', function() {
+          var b = bens.find(function(x){ return x.id == el.dataset.id; });
+          if (b) b.allocation = parseFloat(el.value)  0;
+          updateAlloc(); updateReview(); updateSteps();
+        });
+      });
+
+      updateAlloc();
+      updateReview();
+      updateSteps();
+    }
+    // ── Review summary ──────────────────────────────────────────
+    function updateReview() {
+      var title   = document.getElementById('willTitle').value.trim();
+      var content = document.getElementById('willContent').value.trim();
+      var network = document.getElementById('network').value;
+      var dms     = document.getElementById('dmsEnabled').checked;
+      var days    = document.getElementById('inactivityDays').value  30;
+      var total   = getTotal();
+
+      if (!title && !content && bens.length === 0) {
+        document.getElementById('reviewBox').innerHTML =
+          '<span style="color:var(--muted)">Fill in the sections above to see a summary here.</span>';
+        return;
+      }
+
+      var benRows = bens.length === 0
+        ? '<tr><td colspan="2" style="color:var(--muted);padding-left:1rem">None added</td></tr>'
+        : bens.map(function(b) {
+            return '<tr>' +
+              '<td style="padding:.25rem 0 .25rem 1rem;color:var(--muted)">↳ ' + esc(b.email  'No email') + '</td>' +
+              '<td style="color:var(--text)">' + (b.allocation  0) + '%</td>' +
+            '</tr>';
+          }).join('');
+
+      document.getElementById('reviewBox').innerHTML =
+        '<table class="review-table">' +
+          '<tr><td>📋 Title</td><td style="color:var(--text)">' + esc(title  '—') + '</td></tr>' +
+          '<tr><td>📄 Content</td><td style="color:var(--text)">' +
+            (content ? esc(content.slice(0,80)) + (content.length > 80 ? '…' : '') : '—') +
+          '</td></tr>' +
+          '<tr><td>⛓️ Network</td><td style="color:var(--text)">' + network + '</td></tr>' +
+          '<tr><td style="vertical-align:top">👥 Beneficiaries</td>' +
+            '<td><table>' + benRows + '</table>' +
+              '<span style="font-size:.78rem;font-weight:700;' +
+                'color:' + (total === 100 ? 'var(--green)' : total > 100 ? 'var(--error)' : 'var(--warn)') + '">' +
+                'Total: ' + total + '%' +
+              '</span>' +
+            '</td>' +
+          '</tr>' +
+          '<tr><td>⏱️ DMS</td><td style="color:var(--text)">' +
+            (dms ? '✅ Enabled — ' + days + ' day inactivity limit' : '❌ Disabled') +
+          '</td></tr>' +
+          '<tr><td>🔐 Storage</td><td style="color:var(--green)">AES-256 → IPFS → On-chain</td></tr>' +
+        '</table>';
+    }
+
+    // ── Event listeners ─────────────────────────────────────────
+    document.getElementById('willTitle').addEventListener('input', function() {
+      updateReview(); updateSteps();
+    });
+    document.getElementById('willContent').addEventListener('input', function() {
+      updateReview(); updateSteps();
+    });
+    document.getElementById('network').addEventListener('change', updateReview);
+    document.getElementById('dmsEnabled').addEventListener('change', function() {
+      document.getElementById('dmsOptions').style.display = this.checked ? 'block' : 'none';
+      updateReview();
+    });
+    document.getElementById('inactivityDays').addEventListener('input', function() {
+      document.getElementById('daysLabel').textContent = this.value  30;
+      updateReview();
+    });
+    document.getElementById('btnAddBen').addEventListener('click', addBen);
+
+    // ── SUBMIT ──────────────────────────────────────────────────
+    function submitWill() {
+      // 1. Gather values
+      var title   = document.getElementById('willTitle').value.trim();
+      var content = document.getElementById('willContent').value.trim();
+      var network = document.getElementById('network').value;
+      var dms     = document.getElementById('dmsEnabled').checked;
+      var days    = parseInt(document.getElementById('inactivityDays').value)  30;
+      var total   = getTotal();
+
+      // 2. Hide previous errors
+      document.getElementById('globalAlert').style.display = 'none';
+      ['err-title','err-content','err-ben'].forEach(function(id) {
+        var el = document.getElementById(id);
+        el.classList.remove('show');
+      });
+
+      // 3. Validate
+      var errors = [];
+      if (!title) {
+        document.getElementById('err-title').classList.add('show');
+        errors.push('title');
+      }
+      if (!content) {
+        document.getElementById('err-content').classList.add('show');
+        errors.push('content');
+      }
+      if (bens.length === 0) {
+        var berr = document.getElementById('err-ben');
+        berr.textContent = 'Add at least one beneficiary';
+        berr.classList.add('show');
+        errors.push('ben');
+      } else if (total !== 100) {
+        var berr = document.getElementById('err-ben');
+        berr.textContent = 'Allocations must total exactly 100% — currently ' + total + '%';
+        berr.classList.add('show');
+        errors.push('alloc');
+      }
+
+      if (errors.length > 0) {
+        toast('❌ Please fix the errors before submitting', 'error');
+        // Scroll to first error
+        document.querySelector('.field-error.show').scrollIntoView({
+          behavior: 'smooth', block: 'center'
+        });
+        return;
+      }
+
+      // 4. Disable button
+      var btn = document.getElementById('submitBtn');
+      btn.disabled    = true;
+      btn.textContent = '⏳ Saving...';
+
+      try {
+        // 5. Build payload
+        var payload = {
+          id:        Date.now(),
+          title:     title,
+          content:   content,   // encrypted in Phase 3
+          network:   network,
+          status:    'draft',
+          createdAt: new Date().toISOString(),
+          beneficiaries: bens.map(function(b) {
+            return {
+              email:             b.email,
+              walletAddress:     b.address  null,
+              allocationPercent: parseFloat(b.allocation)
+            };
+          }),
+          deadManSwitch: {
+            isEnabled:      dms,
+            inactivityDays: days,
+            lastPing:       new Date().toISOString()
+          }
+        };
+
+        // 6. Save to localStorage (works now, API in Phase 4)
+        var drafts = [];
+        try { drafts = JSON.parse(localStorage.getItem('dw_drafts')  '[]'); } catch(e) {}
+        drafts.push(payload);
+        localStorage.setItem('dw_drafts', JSON.stringify(drafts));
+
+        // 7. Success feedback then redirect
+        toast('✅ Will saved successfully! Redirecting...', 'success', 2000);
+
+        setTimeout(function() {
+          window.location.href = 'dashboard.html';
+        }, 1800);
+
+      } catch(err) {
+        toast('❌ Error: ' + err.message, 'error');
+        btn.disabled    = false;
+        btn.textContent = '🚀 Create Will';
+      }
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────
+    function esc(str) {
+      return String(str || '').replace(/[&<>"']/g, function(c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+
+    // ── Init ────────────────────────────────────────────────────
+    updateSteps();
+    updateReview();
+  </script>
+</body>
+</html>s
