@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DecentralWill — Secure Digital Inheritance</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">📜</span>
+      <span class="brand-name">DecentralWill</span>
+    </div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link active">Home</a>
+      <a href="about.html" class="nav-link">About</a>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+    </div>
+    <div class="nav-auth" id="navAuth">
+      <a href="login.html"    class="btn btn-outline btn-sm">Sign In</a>
+      <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div class="hero-badge">🔐 Blockchain-Secured</div>
+      <h1 class="hero-title">
+        Your Digital Legacy,<br>
+        <span class="gradient-text">Secured Forever</span>
+      </h1>
+      <p class="hero-subtitle">
+        Create an immutable, encrypted digital will stored on the blockchain.
+        Ensure your assets reach your loved ones — automatically, trustlessly,
+        and without intermediaries.
+      </p>
+      <div class="hero-actions">
+        <a href="register.html" class="btn btn-primary btn-lg">📝 Get Started Free</a>
+        <a href="login.html"    class="btn btn-secondary btn-lg">🔑 Sign In</a>
+      </div>
+      <div class="feature-pills">
+        <span class="pill">✅ AES-256 Encrypted</span>
+        <span class="pill">✅ IPFS Stored</span>
+        <span class="pill">✅ On-Chain Verified</span>
+        <span class="pill">✅ Auto-Execution</span>
+      </div>
+    </section>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🔒</div>
+        <div class="stat-value">256-bit</div>
+        <div class="stat-label">Encryption</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⛓️</div>
+        <div class="stat-value">Immutable</div>
+        <div class="stat-label">On-Chain Storage</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-value">Automatic</div>
+        <div class="stat-label">Execution</div>
+      </div>
+    </div>
+
+    <section class="how-it-works">
+      <h2>How It Works</h2>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-number">01</div>
+          <div class="step-icon">📧</div>
+          <h3>Create Account</h3>
+          <p>Sign up with your email and password — no crypto wallet required to get started.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">02</div>
+          <div class="step-icon">📝</div>
+          <h3>Write Your Will</h3>
+          <p>Define your beneficiaries, allocate assets, and compose your will securely.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">03</div>
+          <div class="step-icon">🔐</div>
+          <h3>Encrypt &amp; Store</h3>
+          <p>Your will is AES-256 encrypted before being uploaded permanently to IPFS.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">04</div>
+          <div class="step-icon">⛓️</div>
+          <h3>Deploy On-Chain</h3>
+          <p>A smart contract is deployed recording your beneficiaries and execution rules.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">05</div>
+          <div class="step-icon">⏳</div>
+          <h3>Stay Active</h3>
+          <p>Log in periodically to confirm you're active. The dead man switch resets automatically.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number">06</div>
+          <div class="step-icon">✅</div>
+          <h3>Auto Execute</h3>
+          <p>If inactivity is detected, assets are distributed to your beneficiaries automatically.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    🏛️ DecentralWill — Secured by Ethereum/Polygon &amp; IPFS
+  </footer>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+      document.querySelector('.hero-actions').innerHTML = `
+        <a href="dashboard.html" class="btn btn-primary btn-lg">📊 Go to Dashboard</a>
+        <a href="create-will.html" class="btn btn-secondary btn-lg">📝 Create Will</a>
+      `;
+    }
+  </script>
+</body>
+</html>
